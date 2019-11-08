@@ -1,6 +1,8 @@
 package com.leohsmedeiros.currencyconversionsystem.data
 
 import android.content.Context
+import com.google.gson.Gson
+import com.leohsmedeiros.currencyconversionsystem.network.RatesApiResult
 
 class DataLayer private constructor() {
     private val SharedPreferencesKey = "CCS_Key"
@@ -9,15 +11,21 @@ class DataLayer private constructor() {
         var instance: DataLayer = DataLayer()
     }
 
-    fun save(context: Context, key: String, content: String) {
+    fun save(context: Context, key: String, apiResult: RatesApiResult) {
         val editor = context.getSharedPreferences(SharedPreferencesKey, Context.MODE_PRIVATE).edit()
         editor.remove(key).apply()
-        editor.putString(key, content).apply()
+        editor.putString(key, Gson().toJson(apiResult)).apply()
     }
 
-    fun load(context: Context, key: String): String? = context
-        .getSharedPreferences(SharedPreferencesKey, Context.MODE_PRIVATE)
-        .getString(key, null)
+    fun load(context: Context, key: String): RatesApiResult? {
+        val persistedValue = context
+            .getSharedPreferences(SharedPreferencesKey, Context.MODE_PRIVATE)
+            .getString(key, null)
+
+        return if (persistedValue != null)
+                    Gson().fromJson(persistedValue, RatesApiResult::class.java)
+               else null
+    }
 
     fun remove(context: Context, key: String) = context
         .getSharedPreferences(SharedPreferencesKey, Context.MODE_PRIVATE)
