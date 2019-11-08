@@ -42,4 +42,5 @@
     <string name="loading_data_info">carregando atualização</string>
     <string name="save_api_result">atualização salva com sucesso!</string>
     <string name="error_on_save_api_result">não foi possível salvar a atualização!</string>
+    <string name="error_on_calculate_conversion">não foi possível calcular a conversão</string>
 </resources>
