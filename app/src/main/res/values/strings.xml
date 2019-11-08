@@ -39,4 +39,5 @@
     <string name="updated_data">dados estão atualizados</string>
     <string name="outdated_data">* dados não estão atualizados</string>
     <string name="btn_update_data">atualizar dados</string>
+    <string name="loading_data_info">carregando atualização</string>
 </resources>
