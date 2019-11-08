@@ -8,15 +8,24 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.*
-import com.google.gson.Gson
 import com.jakewharton.rxbinding3.view.clicks
 import com.leohsmedeiros.currencyconversionsystem.network.NetworkLayer
 import io.reactivex.disposables.CompositeDisposable
 import java.util.concurrent.TimeUnit
 import android.app.ProgressDialog
+import com.leohsmedeiros.currencyconversionsystem.data.DataLayer
+import com.leohsmedeiros.currencyconversionsystem.network.RatesApiResult
+import org.apache.commons.lang3.time.DateUtils
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        val TAG: String = "CurrencyConversion"
+    }
+
+    private val RATES_API_RESULT_KEY: String = "ratesApiResult"
 
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
 
@@ -30,41 +39,62 @@ class MainActivity : AppCompatActivity() {
     private var entryRate: String = ""
     private var resultRate: String = ""
 
-    fun notifyUpdatedData () {
+    private var ratesApiResult: RatesApiResult? = null
+
+
+
+    private fun notifyUpdatedData () {
         tvUpdateInfo.text = resources.getString(R.string.updated_data) as String
         tvUpdateInfo.setTextColor(ContextCompat.getColor(this, R.color.updated))
     }
 
-    fun notifyOutdatedData () {
+    private fun notifyOutdatedData () {
         tvUpdateInfo.text = resources.getString(R.string.outdated_data) as String
         tvUpdateInfo.setTextColor(ContextCompat.getColor(this, R.color.outdated))
+    }
+
+    private fun updateConversionRates (ratesApiResultUpdated: RatesApiResult) {
+        ratesApiResult = ratesApiResultUpdated
+        DataLayer.instance.save(this@MainActivity, RATES_API_RESULT_KEY, ratesApiResultUpdated)
+        notifyUpdatedData()
+        applyConversion()
+    }
+
+    private fun applyConversion () {
+        tvResult.text = etEntry.text.toString()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        spinnerEntryRate.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                entryRate = ""
-                Log.d("MainActivity", "entryRate : $entryRate")
-            }
+        val currentDate = Date()
+        ratesApiResult = DataLayer.instance.load(this, RATES_API_RESULT_KEY)
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+        if (ratesApiResult == null || !DateUtils.isSameDay(currentDate, ratesApiResult?.date)) {
+            notifyOutdatedData()
+        } else {
+            notifyUpdatedData()
+        }
+
+
+        spinnerEntryRate.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent: AdapterView<*>?) { entryRate = "" }
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?,
+                                        position: Int, id: Long) {
                 entryRate = parent?.getItemAtPosition(position).toString()
-                Log.d("MainActivity", "entryRate : $entryRate")
+                applyConversion()
             }
         }
 
         spinnerResultRate.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                resultRate = ""
-                Log.d("MainActivity", "resultRate : $resultRate")
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) { resultRate = "" }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?,
+                                        position: Int, id: Long) {
                 resultRate = parent?.getItemAtPosition(position).toString()
-                Log.d("MainActivity", "resultRate : $resultRate")
+                applyConversion()
             }
         }
 
@@ -76,29 +106,29 @@ class MainActivity : AppCompatActivity() {
                                            count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int,
-                                       before: Int, count: Int) {
-
-                tvResult.text = s.toString()
-            }
+                                       before: Int, count: Int) { applyConversion() }
         })
 
         compositeDisposable.add(btnUpdate.clicks()
             .throttleFirst(1, TimeUnit.SECONDS)
             .subscribe {
-                val dialog = ProgressDialog.show(
-                    this@MainActivity, "",
+                val dialog = ProgressDialog.show(this@MainActivity, "",
                     this@MainActivity.resources.getString(R.string.loading_data_info), true)
 
                 compositeDisposable.add(NetworkLayer.instance
                     .requestRateUpdate()
                     .doAfterTerminate { dialog.dismiss() }
                     .subscribe(
-                        {
-                            Log.d("MainActivity", Gson().toJson(it))
-                            notifyUpdatedData()
+                        { ratesApiResult ->
+                            if (ratesApiResult != null) {
+                                updateConversionRates(ratesApiResult)
+                                Toast.makeText(this@MainActivity, R.string.save_api_result, Toast.LENGTH_SHORT).show()
+                            }else {
+                                Toast.makeText(this@MainActivity, R.string.error_on_save_api_result, Toast.LENGTH_SHORT).show()
+                            }
                         },
                         { e ->
-                            Log.d("MainActivity", "error: ${e.message}" )
+                            Log.e(TAG, "error: ${e.message}" )
                             Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
                         }))
             })

@@ -40,4 +40,6 @@
     <string name="outdated_data">* dados não estão atualizados</string>
     <string name="btn_update_data">atualizar dados</string>
     <string name="loading_data_info">carregando atualização</string>
+    <string name="save_api_result">atualização salva com sucesso!</string>
+    <string name="error_on_save_api_result">não foi possível salvar a atualização!</string>
 </resources>
