@@ -53,15 +53,33 @@ class MainActivity : AppCompatActivity() {
         tvUpdateInfo.setTextColor(ContextCompat.getColor(this, R.color.outdated))
     }
 
-    private fun updateConversionRates (ratesApiResultUpdated: RatesApiResult) {
-        ratesApiResult = ratesApiResultUpdated
-        DataLayer.instance.save(this@MainActivity, RATES_API_RESULT_KEY, ratesApiResultUpdated)
-        notifyUpdatedData()
-        applyConversion()
-    }
-
     private fun applyConversion () {
         tvResult.text = etEntry.text.toString()
+    }
+
+    private fun requestUpdateRates () {
+        val dialog = ProgressDialog.show(this@MainActivity, "",
+            this@MainActivity.resources.getString(R.string.loading_data_info), true)
+
+        compositeDisposable.add(NetworkLayer.instance
+            .requestRateUpdate()
+            .doAfterTerminate { dialog.dismiss() }
+            .subscribe(
+                {
+                    if (it != null) {
+                        ratesApiResult = it
+                        DataLayer.instance.save(this@MainActivity, RATES_API_RESULT_KEY, it)
+                        notifyUpdatedData()
+                        applyConversion()
+                        Toast.makeText(this@MainActivity, R.string.save_api_result, Toast.LENGTH_SHORT).show()
+                    }else {
+                        Toast.makeText(this@MainActivity, R.string.error_on_save_api_result, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                { e ->
+                    Log.e(TAG, "error: ${e.message}" )
+                    Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
+                }))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,27 +129,7 @@ class MainActivity : AppCompatActivity() {
 
         compositeDisposable.add(btnUpdate.clicks()
             .throttleFirst(1, TimeUnit.SECONDS)
-            .subscribe {
-                val dialog = ProgressDialog.show(this@MainActivity, "",
-                    this@MainActivity.resources.getString(R.string.loading_data_info), true)
-
-                compositeDisposable.add(NetworkLayer.instance
-                    .requestRateUpdate()
-                    .doAfterTerminate { dialog.dismiss() }
-                    .subscribe(
-                        { ratesApiResult ->
-                            if (ratesApiResult != null) {
-                                updateConversionRates(ratesApiResult)
-                                Toast.makeText(this@MainActivity, R.string.save_api_result, Toast.LENGTH_SHORT).show()
-                            }else {
-                                Toast.makeText(this@MainActivity, R.string.error_on_save_api_result, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        { e ->
-                            Log.e(TAG, "error: ${e.message}" )
-                            Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
-                        }))
-            })
+            .subscribe { requestUpdateRates () })
     }
 
 }
