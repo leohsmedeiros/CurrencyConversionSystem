@@ -18,12 +18,14 @@ android {
         release {
             minifyEnabled false
             buildConfigField "String", "SERVER_URL", "\"https://api.exchangeratesapi.io/\""
+            buildConfigField "String", "BASE_CURRENCY", "\"BRL\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             debuggable true
             minifyEnabled false
             buildConfigField "String", "SERVER_URL", "\"https://api.exchangeratesapi.io/\""
+            buildConfigField "String", "BASE_CURRENCY", "\"BRL\""
         }
     }
 }

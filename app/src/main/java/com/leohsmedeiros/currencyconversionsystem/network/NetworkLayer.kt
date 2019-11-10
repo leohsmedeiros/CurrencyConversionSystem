@@ -32,12 +32,13 @@ class NetworkLayer private constructor(){
                 .build()
     }
 
-    fun requestRateUpdate(): Single<RatesApiResult> {
+    fun requestRateUpdate(baseCurrency: String): Single<RatesApiResult> {
         val okHttpClient = defaultHttpClient.build()
+        val retrofit = getUpdatedRetrofit(okHttpClient)
 
-        return Single.just(getUpdatedRetrofit(okHttpClient).create(RatesApiRest::class.java))
+        return Single.just(retrofit.create(RatesApiRest::class.java))
             .observeOn(Schedulers.io())
-            .flatMap { ratesApiRest -> ratesApiRest.request() }
+            .flatMap { ratesApiRest -> ratesApiRest.request(baseCurrency) }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
     }

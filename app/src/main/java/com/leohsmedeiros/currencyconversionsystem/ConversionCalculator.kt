@@ -10,24 +10,25 @@ class ConversionCalculator (var ratesApiResult: RatesApiResult?, private val con
     var toCurrency: String = ""
 
 
-    private fun convertToBRL (value: Float, currencyName: String): Float {
+    private fun convertToBaseCurrency (value: Float, currencyName: String): Float {
         val rate = ratesApiResult?.rates?.get(currencyName) as Float
         return (rate) * value
     }
 
-    private fun convertFromBRL (value: Float, currencyName: String): Float {
+    private fun convertFromBaseCurrency (value: Float, currencyName: String): Float {
         val rate = ratesApiResult?.rates?.get(currencyName) as Float
         return (1/rate) * value
     }
 
-    fun isUpdated () = (ratesApiResult != null && DateUtils.isSameDay(Date(), ratesApiResult?.date))
+    fun isUpdated () = (ratesApiResult != null && DateUtils.isSameDay(Date(), ratesApiResult?.date)
+                        && ratesApiResult?.base.equals(BuildConfig.BASE_CURRENCY))
 
     fun calculate (value: Float): String {
         return if (ratesApiResult == null || fromCurrency.isEmpty() || toCurrency.isEmpty()) {
             context.resources.getString(R.string.error_on_calculate_conversion)
         }else {
-            val valueConverted = convertToBRL (value, fromCurrency)
-            convertFromBRL (valueConverted, toCurrency).toString()
+            val valueConverted = convertToBaseCurrency (value, fromCurrency)
+            convertFromBaseCurrency (valueConverted, toCurrency).toString()
         }
     }
 

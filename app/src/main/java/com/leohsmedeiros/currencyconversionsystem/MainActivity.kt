@@ -14,8 +14,6 @@ import io.reactivex.disposables.CompositeDisposable
 import java.util.concurrent.TimeUnit
 import android.app.ProgressDialog
 import com.leohsmedeiros.currencyconversionsystem.data.DataLayer
-import org.apache.commons.lang3.time.DateUtils
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -63,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             resources.getString(R.string.loading_data_info), true)
 
         compositeDisposable.add(NetworkLayer.instance
-            .requestRateUpdate()
+            .requestRateUpdate(BuildConfig.BASE_CURRENCY)
             .doAfterTerminate { dialog.dismiss() }
             .subscribe(
                 {
